@@ -1,0 +1,29 @@
+name: Publish
+
+# Auto-propagation engine: every push to main republishes the SNAPSHOT artifacts
+# to GitHub Packages, so consumers tracking 0.1.0-SNAPSHOT pick up the change on
+# their next build. Tagged releases publish an immutable fixed version instead.
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Publish to GitHub Packages
+        run: ./gradlew publish --no-daemon
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -9,10 +9,13 @@
 
 plugins {
     `java-library`
+    `maven-publish`
 }
 
 group = "com.danovich.platform"
-version = "0.1.0"
+// SNAPSHOT: published on every push to main so consumers tracking the snapshot
+// pick up fixes automatically. Tagged releases override this with a fixed version.
+version = "0.1.0-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -32,3 +35,27 @@ dependencies {
 }
 
 tasks.test { useJUnitPlatform() }
+
+// Publish the compiled jar + POM. OkHttp/annotations stay compileOnly (not in the
+// POM), so the consuming app provides OkHttp — it already bundles it.
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        // GitHub Packages for real cross-project consumption. Credentials come
+        // from the environment (CI) or ~/.gradle/gradle.properties — never here.
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/sdanovich/platform-stack")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: (findProperty("gpr.user") as String?)
+                password = System.getenv("GITHUB_TOKEN") ?: (findProperty("gpr.key") as String?)
+            }
+        }
+        // `publishToMavenLocal` (~/.m2) is always available with no credentials,
+        // used for local end-to-end verification before anything is pushed.
+    }
+}
