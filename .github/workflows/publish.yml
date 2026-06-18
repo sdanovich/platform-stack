@@ -22,6 +22,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # The :platform-login-ui module is an Android library (AAR), so the build
+      # needs an Android SDK + accepted licenses to assemble + publish it.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
       - name: Publish to GitHub Packages
         run: ./gradlew publish --no-daemon
         env:
