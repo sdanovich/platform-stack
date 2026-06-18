@@ -4,3 +4,5 @@ build/
 .idea/
 *.iml
 .DS_Store
+# Machine-specific Android SDK path (for :platform-login-ui)
+local.properties
