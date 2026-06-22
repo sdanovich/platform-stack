@@ -24,4 +24,5 @@ rootProject.name = "platform-stack"
 include(":backend-auth")
 include(":android-auth")
 include(":backend-login")
+include(":backend-notification")
 include(":platform-login-ui")
