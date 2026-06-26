@@ -34,6 +34,9 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:2.0.13")
     compileOnly("org.springframework.boot:spring-boot:3.3.2")
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:3.3.2")
+    // Redis Streams exchange (publisher + durable consumer). The host app brings the
+    // runtime via spring-boot-starter-data-redis; we only compile against the API.
+    compileOnly("org.springframework.data:spring-data-redis:3.3.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
 }
