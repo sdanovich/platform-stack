@@ -12,8 +12,11 @@ import org.slf4j.LoggerFactory;
  * builds it from {@code platform.notification.sms.*}). If credentials are absent,
  * the notifier stays disabled and {@link #send} logs and no-ops, so an app without
  * Twilio configured still runs.
+ *
+ * <p>One of the {@link Notifier} transports; select it with
+ * {@code platform.notification.sms.provider=twilio} (the default).
  */
-public class SmsNotifier {
+public class SmsNotifier implements Notifier {
 
     private static final Logger log = LoggerFactory.getLogger(SmsNotifier.class);
 
@@ -31,6 +34,7 @@ public class SmsNotifier {
         }
     }
 
+    @Override
     public void send(String to, String text) {
         if (!ready || to == null || to.isBlank()) {
             log.info("SMS suppressed (not ready or no recipient): {}", text);
