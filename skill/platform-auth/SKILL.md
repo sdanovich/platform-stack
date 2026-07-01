@@ -132,6 +132,46 @@ refresh interceptor wraps the bearer one: when it retries after a 401, the retry
 goes out with no header — a silent, confusing auth failure. If a project also has tunnel /
 host-selection interceptors, host-selection stays INNERMOST (it stamps the final URL last).
 
+## Per-user login UI (`platform-login-ui`): the OAuth client-id release gotcha
+
+This skill's flow above is **client-credentials** (one app secret). Projects that
+instead use the per-user login stack (`backend-login` + `platform-login-ui` on
+`backend-auth` + `android-auth`, the BidHound/NearMe social-login path) hit a
+different, release-only trap worth calling out here because it wastes hours and
+looks like a keep-rules bug when it is not.
+
+**Symptom:** Google/GitHub buttons work in debug but read "… isn't set up yet"
+in a release build, even though `-PgoogleServerClientId=`/`-PgithubClientId=`
+were passed and `BuildConfig` holds the real values.
+
+**It is not R8.** `buildConfigField("String", …)` makes a Java `static final
+String`; Kotlin **inlines that constant into the login call site at compile
+time**, so the id is a `const-string` literal in the compiled method — nothing
+reads the `BuildConfig` field at runtime (verified in a release dex: the ids
+appear as `const-string`, with no `sget-object …BuildConfig;->…`). Therefore
+`-keep class …BuildConfig { *; }` and `android.enableR8.fullMode=false` neither
+cause nor cure it — they are red herrings, and this class of failure needs **no
+`consumer-rules.pro`.** Two things actually matter:
+
+- **Inject the fields in `defaultConfig`, not in a `debug { }` block.** Scoping
+  them to debug leaves the release APK with the empty fallback → both buttons
+  dead in release only. Both build types need the same id; there is nothing
+  release-specific about it. And the `-P` values must be present on the exact
+  `assembleRelease` invocation.
+- **Changing a `-P`-injected value needs a clean, cache-bypassing rebuild.**
+  Because the id is inlined and the login source rarely changes, incremental
+  compilation + the Gradle build cache can retain a class compiled against the
+  old/empty id. `./gradlew clean` alone does not help (the cache restores the
+  stale compiled class). Rebuild with:
+  ```bash
+  ./gradlew clean :app:assembleRelease --no-build-cache -PgoogleServerClientId=… -PgithubClientId=…
+  ```
+  This rule applies to *any* `-P`-injected `BuildConfig` value (client ids,
+  redirect uri, base url), not just the OAuth ids.
+
+See `platform-login-ui/README.md` for the full injection convention and the
+disassembly evidence.
+
 ## Verifying it works
 
 ```bash
